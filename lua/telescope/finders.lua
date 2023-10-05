@@ -6,6 +6,7 @@ local log = require "telescope.log"
 local async_static_finder = require "telescope.finders.async_static_finder"
 local async_oneshot_finder = require "telescope.finders.async_oneshot_finder"
 local async_job_finder = require "telescope.finders.async_job_finder"
+local async_job_finder_with_args = require "telescope.finders.aynsc_job_finder_with_args"
 
 local finders = {}
 
@@ -179,6 +180,15 @@ finders.new_job = function(command_generator, entry_maker, _, cwd)
     cwd = cwd,
   }
 end
+
+finders.new_job_with_args = function(command_generator, entry_maker, _, cwd)
+  return async_job_finder_with_args {
+    command_generator = command_generator,
+    entry_maker = entry_maker,
+    cwd = cwd,
+  }
+end
+
 
 --- One shot job
 ---@param command_list string[]: Command list to execute.

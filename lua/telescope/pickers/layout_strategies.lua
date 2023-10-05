@@ -301,6 +301,8 @@ layout_strategies.horizontal = make_documented_layout(
     local preview = initial_options.preview
     local results = initial_options.results
     local prompt = initial_options.prompt
+    local include = initial_options.include
+    local exclude = initial_options.exclude
 
     local tbln
     max_lines, tbln = calc_tabline(max_lines)
@@ -330,6 +332,8 @@ layout_strategies.horizontal = make_documented_layout(
 
       results.width = width - preview.width - w_space
       prompt.width = results.width
+      include.width = prompt.width
+      exclude.width = prompt.width
     else
       -- Cap over/undersized width (without previewer)
       width, w_space = calc_size_and_spacing(width, max_columns, bs, 1, 2, 0)
@@ -337,14 +341,18 @@ layout_strategies.horizontal = make_documented_layout(
       preview.width = 0
       results.width = width - preview.width - w_space
       prompt.width = results.width
+      include.width = prompt.width
+      exclude.width = prompt.width
     end
 
     local h_space
     -- Cap over/undersized height
-    height, h_space = calc_size_and_spacing(height, max_lines, bs, 2, 4, 1)
+    height, h_space = calc_size_and_spacing(height, max_lines, bs, 4, 8, 1)
 
     prompt.height = 1
-    results.height = height - prompt.height - h_space
+    include.height = 1
+    exclude.height = 1
+    results.height = height - prompt.height - include.height - exclude.height - h_space
 
     if self.previewer then
       preview.height = height - 2 * bs
@@ -357,10 +365,14 @@ layout_strategies.horizontal = make_documented_layout(
     if not layout_config.mirror then
       results.col = width_padding + bs + 1
       prompt.col = results.col
+      include.col = results.col
+      exclude.col = results.col
       preview.col = results.col + results.width + 1 + bs
     else
       preview.col = width_padding + bs + 1
       prompt.col = preview.col + preview.width + 1 + bs
+      include.col = preview.col + preview.width + 1 + bs
+      exclude.col = preview.col + preview.width + 1 + bs
       results.col = preview.col + preview.width + 1 + bs
     end
 
@@ -370,7 +382,9 @@ layout_strategies.horizontal = make_documented_layout(
       results.line = prompt.line + prompt.height + 1 + bs
     elseif layout_config.prompt_position == "bottom" then
       results.line = preview.line
-      prompt.line = results.line + results.height + 1 + bs
+      exclude.line = results.line + results.height + 1 + bs
+      include.line = exclude.line + exclude.height + 1 + bs
+      prompt.line = include.line + include.height + 1 + bs
     else
       error(string.format("Unknown prompt_position: %s\n%s", self.window.prompt_position, vim.inspect(layout_config)))
     end
@@ -381,6 +395,8 @@ layout_strategies.horizontal = make_documented_layout(
     if tbln then
       prompt.line = prompt.line + 1
       results.line = results.line + 1
+      include.line = include.line + 1
+      exclude.line = exclude.line + 1
       preview.line = preview.line + 1
     end
 
@@ -388,6 +404,8 @@ layout_strategies.horizontal = make_documented_layout(
       preview = self.previewer and preview.width > 0 and preview,
       results = results,
       prompt = prompt,
+      include = include,
+      exclude = exclude
     }
   end
 )

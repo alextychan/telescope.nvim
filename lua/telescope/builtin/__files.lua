@@ -165,6 +165,81 @@ files.live_grep = function(opts)
     :find()
 end
 
+files.live_grep_ex = function(opts)
+  local vimgrep_arguments = opts.vimgrep_arguments or conf.vimgrep_arguments
+  local search_dirs = opts.search_dirs
+  local grep_open_files = opts.grep_open_files
+  opts.cwd = opts.cwd and vim.fn.expand(opts.cwd) or vim.loop.cwd()
+
+  local filelist = get_open_filelist(grep_open_files, opts.cwd)
+  if search_dirs then
+    for i, path in ipairs(search_dirs) do
+      search_dirs[i] = vim.fn.expand(path)
+    end
+  end
+
+  local additional_args = {}
+  if opts.additional_args ~= nil then
+    if type(opts.additional_args) == "function" then
+      additional_args = opts.additional_args(opts)
+    elseif type(opts.additional_args) == "table" then
+      additional_args = opts.additional_args
+    end
+  end
+
+  if opts.type_filter then
+    additional_args[#additional_args + 1] = "--type=" .. opts.type_filter
+  end
+
+  if type(opts.glob_pattern) == "string" then
+    additional_args[#additional_args + 1] = "--glob=" .. opts.glob_pattern
+  elseif type(opts.glob_pattern) == "table" then
+    for i = 1, #opts.glob_pattern do
+      additional_args[#additional_args + 1] = "--glob=" .. opts.glob_pattern[i]
+    end
+  end
+
+  if opts.file_encoding then
+    additional_args[#additional_args + 1] = "--encoding=" .. opts.file_encoding
+  end
+
+  local default_args = flatten { vimgrep_arguments, additional_args }
+  opts.__inverted, opts.__matches = opts_contain_invert(default_args)
+
+  local live_grepper = finders.new_job_with_args(function(grep_args)
+    local args = grep_args.args
+    local prompt = grep_args.prompt
+    if not prompt or prompt == "" then
+      return nil
+    end
+
+    local search_list = {}
+
+    if grep_open_files then
+      search_list = filelist
+    elseif search_dirs then
+      search_list = search_dirs
+    end
+
+    return flatten { default_args, args, "--", prompt, search_list }
+  end, opts.entry_maker or make_entry.gen_from_vimgrep(opts), opts.max_results, opts.cwd)
+
+  pickers
+    .new(opts, {
+      prompt_title = "Live Grep Ex",
+      finder = live_grepper,
+      previewer = conf.grep_previewer(opts),
+      -- TODO: It would be cool to use `--json` output for this
+      -- and then we could get the highlight positions directly.
+      sorter = sorters.highlighter_only(opts),
+      attach_mappings = function(_, map)
+        map("i", "<c-space>", actions.to_fuzzy_refine)
+        return true
+      end,
+    })
+    :find_ex()
+end
+
 files.grep_string = function(opts)
   -- TODO: This should probably check your visual selection as well, if you've got one
   opts.cwd = opts.cwd and vim.fn.expand(opts.cwd) or vim.loop.cwd()

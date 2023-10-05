@@ -37,12 +37,31 @@ function p_window.get_initial_window_options(picker)
     border = popup_border.prompt,
     borderchars = popup_borderchars.prompt,
     enter = true,
+    focusable = true,
+  }
+
+  local include = {
+    title = "files to include",
+    border = popup_border.prompt,
+    borderchars = popup_borderchars.prompt,
+    enter = false,
+    focusable = true,
+  }
+
+  local exclude = {
+    title = "files to exclude",
+    border = popup_border.prompt,
+    borderchars = popup_borderchars.prompt,
+    enter = false,
+    focusable = true,
   }
 
   return {
     preview = preview,
     results = results,
     prompt = prompt,
+    include = include,
+    exclude = exclude
   }
 end
 
