@@ -84,6 +84,13 @@ local layout_config_defaults = {
     preview_cutoff = 120,
   },
 
+  horizontal_filters = {
+    width = 0.8,
+    height = 0.9,
+    prompt_position = "bottom",
+    preview_cutoff = 120,
+  },
+
   vertical = {
     width = 0.8,
     height = 0.9,

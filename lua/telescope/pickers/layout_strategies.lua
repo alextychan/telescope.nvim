@@ -301,6 +301,108 @@ layout_strategies.horizontal = make_documented_layout(
     local preview = initial_options.preview
     local results = initial_options.results
     local prompt = initial_options.prompt
+
+    local tbln
+    max_lines, tbln = calc_tabline(max_lines)
+
+    local width_opt = layout_config.width
+    local width = resolve.resolve_width(width_opt)(self, max_columns, max_lines)
+
+    local height_opt = layout_config.height
+    local height = resolve.resolve_height(height_opt)(self, max_columns, max_lines)
+
+    local bs = get_border_size(self)
+
+    local w_space
+    if self.previewer and max_columns >= layout_config.preview_cutoff then
+      -- Cap over/undersized width (with previewer)
+      width, w_space = calc_size_and_spacing(width, max_columns, bs, 2, 4, 1)
+
+      preview.width = resolve.resolve_width(vim.F.if_nil(layout_config.preview_width, function(_, cols)
+        if cols < 150 then
+          return math.floor(cols * 0.4)
+        elseif cols < 200 then
+          return 80
+        else
+          return 120
+        end
+      end))(self, width, max_lines)
+
+      results.width = width - preview.width - w_space
+      prompt.width = results.width
+    else
+      -- Cap over/undersized width (without previewer)
+      width, w_space = calc_size_and_spacing(width, max_columns, bs, 1, 2, 0)
+
+      preview.width = 0
+      results.width = width - preview.width - w_space
+      prompt.width = results.width
+    end
+
+    local h_space
+    -- Cap over/undersized height
+    height, h_space = calc_size_and_spacing(height, max_lines, bs, 4, 4, 1)
+
+    prompt.height = 1
+    results.height = height - prompt.height - h_space
+
+    if self.previewer then
+      preview.height = height - 2 * bs
+    else
+      preview.height = 0
+    end
+
+    local width_padding = math.floor((max_columns - width) / 2)
+    -- Default value is false, to use the normal horizontal layout
+    if not layout_config.mirror then
+      results.col = width_padding + bs + 1
+      prompt.col = results.col
+      preview.col = results.col + results.width + 1 + bs
+    else
+      preview.col = width_padding + bs + 1
+      prompt.col = preview.col + preview.width + 1 + bs
+      results.col = preview.col + preview.width + 1 + bs
+    end
+
+    preview.line = math.floor((max_lines - height) / 2) + bs + 1
+    if layout_config.prompt_position == "top" then
+      prompt.line = preview.line
+      results.line = prompt.line + prompt.height + 1 + bs
+    elseif layout_config.prompt_position == "bottom" then
+      results.line = preview.line
+      prompt.line = results.line + results.height + 1 + bs
+    else
+      error(string.format("Unknown prompt_position: %s\n%s", self.window.prompt_position, vim.inspect(layout_config)))
+    end
+
+    local anchor_pos = resolve.resolve_anchor_pos(layout_config.anchor or "", width, height, max_columns, max_lines)
+    adjust_pos(anchor_pos, prompt, results, preview)
+
+    if tbln then
+      prompt.line = prompt.line + 1
+      results.line = results.line + 1
+      preview.line = preview.line + 1
+    end
+
+    return {
+      preview = self.previewer and preview.width > 0 and preview,
+      results = results,
+      prompt = prompt,
+    }
+  end
+)
+
+layout_strategies.horizontal_filters = make_documented_layout(
+  "horizontal_filters",
+  vim.tbl_extend("error", shared_options, {
+    preview_width = { "Change the width of Telescope's preview window", "See |resolver.resolve_width()|" },
+    preview_cutoff = "When columns are less than this value, the preview will be disabled",
+  }),
+  function(self, max_columns, max_lines, layout_config)
+    local initial_options = p_window.get_initial_window_options(self)
+    local preview = initial_options.preview
+    local results = initial_options.results
+    local prompt = initial_options.prompt
     local include = initial_options.include
     local exclude = initial_options.exclude
 
@@ -409,7 +511,6 @@ layout_strategies.horizontal = make_documented_layout(
     }
   end
 )
-
 --- Centered layout with a combined block of the prompt
 --- and results aligned to the middle of the screen.
 --- The preview window is then placed in the remaining
@@ -719,7 +820,7 @@ layout_strategies.vertical = make_documented_layout(
       height, h_space = calc_size_and_spacing(height, max_lines, bs, 3, 6, 2)
 
       preview.height =
-        resolve.resolve_height(vim.F.if_nil(layout_config.preview_height, 0.5))(self, max_columns, height)
+          resolve.resolve_height(vim.F.if_nil(layout_config.preview_height, 0.5))(self, max_columns, height)
     else
       -- Cap over/undersized height (without previewer)
       height, h_space = calc_size_and_spacing(height, max_lines, bs, 2, 4, 1)

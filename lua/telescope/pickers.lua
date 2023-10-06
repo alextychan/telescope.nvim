@@ -591,6 +591,8 @@ function Picker:find_ex()
     line_count = line_count - 1
   end
 
+  print(self.layout_strategy)
+  self.layout_strategy = "horizontal_filters"
   local popup_opts = self:get_window_options(vim.o.columns, line_count)
 
   -- `popup.nvim` massaging so people don't have to remember minheight shenanigans
@@ -637,9 +639,6 @@ function Picker:find_ex()
   self.prompt_win = prompt_win
   self.prompt_border = prompt_opts and prompt_opts.border
 
-  dd("find_ex called")
-  dd(popup_opts.include)
-
   local include_win, include_opts, include_border_win = self:_create_window("", popup_opts.include)
   local include_bufnr = a.nvim_win_get_buf(include_win)
   pcall(a.nvim_buf_set_option, include_bufnr, "tabstop", 1)
@@ -654,7 +653,6 @@ function Picker:find_ex()
 
   self.windows = { prompt_win, include_win, exclude_win }
   self.focus = 1
-  dd(self.windows)
 
   -- Prompt prefix
   local prompt_prefix = self.prompt_prefix
@@ -681,6 +679,15 @@ function Picker:find_ex()
 
   if self.default_text then
     self:set_prompt(self.default_text)
+  end
+
+  if self.cache_picker then
+   if self.cache_picker.cached_include then
+    self:set_include_filters(self.cache_picker.cached_include)
+   end 
+   if self.cache_picker.cached_exclude then
+    self:set_exclude_filters(self.cache_picker.cached_exclude)
+   end 
   end
 
   if vim.tbl_contains({ "insert", "normal" }, self.initial_mode) then
@@ -739,7 +746,6 @@ function Picker:find_ex()
 
         local includes = vim.split(include_glob, ",", { trimempty = true })
         local excludes = vim.split(exclude_glob, ",", { trimempty = true })
-        print("includes-excludes", vim.inspect(includes), vim.inspect(excludes))
         local glob_args = {}
         for i = 1, #includes do
           glob_args[#glob_args + 1] = "--glob=" .. includes[i]
@@ -827,8 +833,6 @@ function Picker:find_ex()
     callback = function()
       local cur_win = vim.api.nvim_get_current_win()
       local cur_buf = vim.api.nvim_get_current_buf()
-      print("callback", cur_win, cur_buf, self.previewer._empty_bufnr, vim.inspect(self.windows), prompt_bufnr)
-      dd(vim.tbl_contains(self.windows, cur_win))
       -- Close telescope when the active window/buffer is not of telescope
       if not vim.tbl_contains(self.windows, cur_win) and cur_buf ~= self.previewer._empty_bufnr then
         require("telescope.pickers").on_close_prompt(prompt_bufnr)
@@ -1107,6 +1111,22 @@ function Picker:delete_selection(delete_cb)
   end, 50)
 end
 
+function Picker:set_exclude_filters(text)
+  vim.api.nvim_buf_set_lines(self.exclude_bufnr, 0, -1, false, { text })
+
+  if text then
+    vim.api.nvim_win_set_cursor(self.exclude_win, { 1, #text })
+  end
+end
+
+function Picker:set_include_filters(text)
+  vim.api.nvim_buf_set_lines(self.include_bufnr, 0, -1, false, { text })
+
+  if text then
+    vim.api.nvim_win_set_cursor(self.include_win, { 1, #text })
+  end
+end
+
 function Picker:set_prompt(text)
   self:reset_prompt(text)
 end
@@ -1123,7 +1143,6 @@ function Picker.close_windows(status)
   utils.win_delete("preview_border_win", status.preview_border_win, true, true)
 
   if status.include_border_win then
-    print("clear include_border")
     utils.win_delete("include_border_win", status.include_border_win, true, true)
     if vim.api.nvim_win_is_valid(status.include_win) then
       vim.api.nvim_win_close(status.include_win, true)
@@ -1133,7 +1152,6 @@ function Picker.close_windows(status)
   end
 
   if status.exclude_border_win then
-    print("clear exclude_border")
     utils.win_delete("exclude_border_win", status.exclude_border_win, true, true)
     if vim.api.nvim_win_is_valid(status.exclude_win) then
       vim.api.nvim_win_close(status.exclude_win, true)
@@ -1241,13 +1259,6 @@ function Picker:toggle_window_focus(forward)
     end
   end
 
-  print('toggle_window_focus')
-  print(forward)
-  dd(self.windows)
-  dd(#self.windows)
-  dd(self.focus)
-  dd(self.windows[self.focus])
-  dd(vim.api.nvim_list_wins())
   vim.api.nvim_set_current_win(self.windows[self.focus])
 end
 
@@ -1384,8 +1395,6 @@ function Picker:set_selection(row)
 
   local entry = self.manager:get_entry(self:get_index(row))
   state.set_global_key("selected_entry", entry)
-
-  print("entry", vim.inspect(entry))
 
   if not entry then
     -- also refresh previewer when there is no entry selected, so the preview window is cleared
@@ -1857,7 +1866,6 @@ end
 --- Close the picker which has prompt with buffer number `prompt_bufnr`
 ---@param prompt_bufnr number
 function pickers.on_close_prompt(prompt_bufnr)
-  print(debug.traceback())
   local status = state.get_status(prompt_bufnr)
   local picker = status.picker
   require("telescope.actions.state").get_current_history():reset()
@@ -1884,6 +1892,8 @@ function pickers.on_close_prompt(prompt_bufnr)
       picker.default_text = picker:_get_prompt()
       picker.cache_picker.selection_row = picker._selection_row
       picker.cache_picker.cached_prompt = picker:_get_prompt()
+      picker.cache_picker.cached_include = picker:_get_include_dirs()
+      picker.cache_picker.cached_exclude = picker:_get_exclude_dirs()
       picker.cache_picker.is_cached = true
       table.insert(cached_pickers, 1, picker)
 
@@ -1939,11 +1949,19 @@ function Picker:_get_prompt()
 end
 
 function Picker:_get_exclude_dirs()
-  return vim.api.nvim_buf_get_lines(self.exclude_bufnr, 0, 1, false)[1]
+  if self.exclude_bufnr ~= nil then
+    return vim.api.nvim_buf_get_lines(self.exclude_bufnr, 0, 1, false)[1]
+  else
+    return nil
+  end
 end
 
 function Picker:_get_include_dirs()
-  return vim.api.nvim_buf_get_lines(self.include_bufnr, 0, 1, false)[1]
+  if self.include_bufnr ~= nil then
+    return vim.api.nvim_buf_get_lines(self.include_bufnr, 0, 1, false)[1]
+  else
+    return nil
+  end
 end
 
 function Picker:_reset_highlights()
