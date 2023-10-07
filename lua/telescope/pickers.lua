@@ -746,19 +746,29 @@ function Picker:find_ex()
 
         local includes = vim.split(include_glob, ",", { trimempty = true })
         local excludes = vim.split(exclude_glob, ",", { trimempty = true })
-        local glob_args = {}
+        local args = {}
         for i = 1, #includes do
-          glob_args[#glob_args + 1] = "--glob=" .. includes[i]
+          args[#args + 1] = "--glob=" .. includes[i]
         end
         for i = 1, #excludes do
-          glob_args[#glob_args + 1] = "--glob=!" .. excludes[i]
+          args[#args + 1] = "--glob=!" .. excludes[i]
         end
-        -- TODO: Support other layouts + finish up horizontal layout
-        -- TODO: Add keymap to init.lua to test our version
+        -- TODO:Test flags
+        if self.rg and self.rg.opts then
+          for k, v in pairs(self.rg.opts) do
+            if v then
+              args[#args + 1] = k .. "=" .. v
+            else
+              args[#args + 1] = k
+              -- Toggle ignore flag
+            end
+          end
+        end
 
+        print("args", vim.inspect(args))
         local args = {
           prompt = prompt,
-          args = glob_args
+          args = args
         }
 
         local ok, msg = pcall(function()
@@ -1021,7 +1031,7 @@ function Picker:recalculate_layout()
     popup.move(prompt_win, popup_opts.prompt)
     popup.move(results_win, popup_opts.results)
   end
-  
+
   if popup_opts.include then
     popup.move(include_win, popup_opts.include)
   end

@@ -77,8 +77,8 @@ local actions = setmetatable({}, {
 
 local append_to_history = function(prompt_bufnr)
   action_state
-    .get_current_history()
-    :append(action_state.get_current_line(), action_state.get_current_picker(prompt_bufnr))
+      .get_current_history()
+      :append(action_state.get_current_line(), action_state.get_current_picker(prompt_bufnr))
 end
 
 --- Move the selection to the next entry
@@ -1152,9 +1152,9 @@ actions.which_key = function(prompt_bufnr, opts)
 
   local make_display = function(mapping)
     return displayer {
-      { mapping.mode, vim.F.if_nil(opts.mode_hl, "TelescopeResultsConstant") },
+      { mapping.mode,    vim.F.if_nil(opts.mode_hl, "TelescopeResultsConstant") },
       { mapping.keybind, vim.F.if_nil(opts.keybind_hl, "TelescopeResultsVariable") },
-      { mapping.name, vim.F.if_nil(opts.name_hl, "TelescopeResultsFunction") },
+      { mapping.name,    vim.F.if_nil(opts.name_hl, "TelescopeResultsFunction") },
     }
   end
 
@@ -1191,13 +1191,13 @@ actions.which_key = function(prompt_bufnr, opts)
   end)
 
   local entry_width = #opts.column_padding
-    + opts.mode_width
-    + opts.keybind_width
-    + opts.name_width
-    + (3 * #opts.separator)
+      + opts.mode_width
+      + opts.keybind_width
+      + opts.name_width
+      + (3 * #opts.separator)
   local num_total_columns = math.floor((vim.o.columns - #column_indent) / entry_width)
   opts.num_rows =
-    math.min(math.ceil(#mappings / num_total_columns), resolver.resolve_height(opts.max_height)(_, _, vim.o.lines))
+      math.min(math.ceil(#mappings / num_total_columns), resolver.resolve_height(opts.max_height)(_, _, vim.o.lines))
   local total_available_entries = opts.num_rows * num_total_columns
   local winheight = opts.num_rows + 2 * opts.line_padding
 
@@ -1211,7 +1211,7 @@ actions.which_key = function(prompt_bufnr, opts)
   local results_row = win_central_row(picker.results_win)
   local preview_row = picker.preview_win and win_central_row(picker.preview_win) or results_row
   local prompt_pos = prompt_row < 0.4 * vim.o.lines
-    or prompt_row < 0.6 * vim.o.lines and results_row + preview_row < vim.o.lines
+      or prompt_row < 0.6 * vim.o.lines and results_row + preview_row < vim.o.lines
 
   local modes = { n = "Normal", i = "Insert" }
   local title_mode = opts.only_show_current_mode and modes[mode] .. " Mode " or ""
@@ -1323,6 +1323,21 @@ actions.to_fuzzy_refine = function(prompt_bufnr)
     prompt_title = string.format("%s (%s)", opts.prefix, line),
     sorter = opts.sorter,
   })
+end
+
+actions.rg_toggle_no_ignore = function(prompt_bufnr)
+  local curr_picker = action_state.get_current_picker(prompt_bufnr)
+  if curr_picker.rg == nil or curr_picker.rg.opts == nil then
+    curr_picker.rg = { opts = {} }
+  end
+  -- Toggle ignore flag
+  if curr_picker.rg.opts["--no-ignore"] == false then
+    curr_picker.rg.opts["--no-ignore"] = nil
+  else
+    curr_picker.rg.opts["--no-ignore"] = false
+  end
+  -- Force handle flag
+  curr_picker._on_lines()
 end
 
 actions.nop = function(_) end

@@ -199,6 +199,8 @@ mappings.default_mappings = config.values.default_mappings
       ["<PageUp>"] = actions.results_scrolling_up,
       ["<PageDown>"] = actions.results_scrolling_down,
 
+      ["I"] = actions.rg_toggle_no_ignore,
+
       ["?"] = actions.which_key,
     },
   }
