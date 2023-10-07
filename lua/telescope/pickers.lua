@@ -682,12 +682,12 @@ function Picker:find_ex()
   end
 
   if self.cache_picker then
-   if self.cache_picker.cached_include then
-    self:set_include_filters(self.cache_picker.cached_include)
-   end 
-   if self.cache_picker.cached_exclude then
-    self:set_exclude_filters(self.cache_picker.cached_exclude)
-   end 
+    if self.cache_picker.cached_include then
+      self:set_include_filters(self.cache_picker.cached_include)
+    end
+    if self.cache_picker.cached_exclude then
+      self:set_exclude_filters(self.cache_picker.cached_exclude)
+    end
   end
 
   if vim.tbl_contains({ "insert", "normal" }, self.initial_mode) then
@@ -944,6 +944,7 @@ end
 
 --- A helper function to update picker windows when layout options are changed
 function Picker:recalculate_layout()
+  print(debug.traceback())
   local line_count = vim.o.lines - vim.o.cmdheight
   if vim.o.laststatus ~= 0 then
     line_count = line_count - 1
@@ -962,6 +963,8 @@ function Picker:recalculate_layout()
   local prompt_win = status.prompt_win
   local results_win = status.results_win
   local preview_win = status.preview_win
+  local include_win = status.include_win
+  local exclude_win = status.exclude_win
 
   local preview_opts, preview_border_win
   if popup_opts.preview then
@@ -1018,7 +1021,13 @@ function Picker:recalculate_layout()
     popup.move(prompt_win, popup_opts.prompt)
     popup.move(results_win, popup_opts.results)
   end
-
+  
+  if popup_opts.include then
+    popup.move(include_win, popup_opts.include)
+  end
+  if popup_opts.exclude then
+    popup.move(exclude_win, popup_opts.exclude)
+  end
   -- Temporarily disabled: Draw the screen ASAP. This makes things feel speedier.
   -- vim.cmd [[redraw]]
 
