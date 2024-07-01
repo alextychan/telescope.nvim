@@ -205,6 +205,9 @@ describe("transform_path", function()
     elseif type(path_display) == "table" then
       opts.path_display = path_display
       eq(expect, utils.transform_path(opts, path))
+    elseif type(path_display) == "function" then
+      opts.path_display = path_display
+      eq(expect, utils.transform_path(opts, path))
     elseif path_display == nil then
       eq(expect, utils.transform_path(opts, path))
     end
@@ -277,4 +280,114 @@ describe("transform_path", function()
   it("handles default 'truncate' path_display", function()
     assert_path({ "truncate" }, new_relpath "lua/telescope/init.lua", new_relpath "…scope/init.lua")
   end)
+
+  it("handles 'filename_first' path_display", function()
+    assert_path("filename_first", new_relpath "init.lua", new_relpath "init.lua")
+    assert_path("filename_first", new_relpath "lua/telescope/init.lua", new_relpath "init.lua lua/telescope")
+  end)
+
+  it("handles 'filename_first' path_display with the option to reverse directories", function()
+    assert_path({ filename_first = { reverse_directories = true } }, new_relpath "init.lua", new_relpath "init.lua")
+    assert_path(
+      { filename_first = { reverse_directories = true } },
+      new_relpath "lua/telescope/init.lua",
+      new_relpath "init.lua telescope/lua"
+    )
+    assert_path({ filename_first = { reverse_directories = false } }, new_relpath "init.lua", new_relpath "init.lua")
+    assert_path(
+      { filename_first = { reverse_directories = false } },
+      new_relpath "lua/telescope/init.lua",
+      new_relpath "init.lua lua/telescope"
+    )
+  end)
+
+  it("handles function passed to path_display", function()
+    assert_path(function(_, path)
+      return string.gsub(path, "^doc", "d")
+    end, new_relpath "doc/mydoc.md", new_relpath "d/mydoc.md")
+  end)
+end)
+
+describe("path_tail", function()
+  local function assert_tails(paths)
+    for _, path in ipairs(paths) do
+      it("gets the tail of " .. path, function()
+        local tail = vim.fn.fnamemodify(path, ":p:t")
+        eq(tail, utils.path_tail(path))
+      end)
+    end
+  end
+
+  if jit and jit.os:lower() == "windows" then
+    describe("handles windows paths", function()
+      local paths = {
+        [[C:\Users\username\AppData\Local\nvim-data\log]],
+        [[D:\Projects\project_folder\source_code.py]],
+        [[E:\Music\song.mp3]],
+        [[/home/usuario/documents/archivo.txt]],
+        [[/var/www/html/index.html]],
+        [[/mnt/backup/backup_file.tar.gz]],
+      }
+
+      assert_tails(paths)
+    end)
+  elseif jit and jit.os:lower() == "linux" then
+    describe("handles linux paths", function()
+      local paths = {
+        [[/home/usuario/documents/archivo.txt]],
+        [[/var/www/html/index.html]],
+        [[/mnt/backup/backup_file.tar.gz]],
+      }
+
+      assert_tails(paths)
+    end)
+  elseif jit and jit.os:lower() == "osx" then
+    describe("handles macos paths", function()
+      local paths = {
+        [[/Users/Usuario/Documents/archivo.txt]],
+        [[/Applications/App.app/Contents/MacOS/app_executable]],
+        [[/Volumes/ExternalDrive/Data/file.xlsx]],
+      }
+
+      assert_tails(paths)
+    end)
+  end
+end)
+
+describe("split_lines", function()
+  local expect = {
+    "",
+    "",
+    "line3 of the file",
+    "",
+    "line5 of the file",
+    "",
+    "",
+    "line8 of the file, last line of file",
+    "",
+  }
+
+  local function get_fake_file(line_ending)
+    return table.concat(expect, line_ending)
+  end
+
+  local newline_file = get_fake_file "\n"
+  local carriage_newline_file = get_fake_file "\r\n"
+
+  if utils.iswin then
+    describe("handles files on Windows", function()
+      it("reads file with newline only", function()
+        assert.are.same(expect, utils.split_lines(newline_file))
+      end)
+      it("reads file with carriage return and newline", function()
+        assert.are.same(expect, utils.split_lines(carriage_newline_file))
+      end)
+    end)
+  else
+    describe("handles files on non Windows environment", function()
+      it("reads file with newline only", function()
+        assert.are.same(expect, utils.split_lines(newline_file))
+      end)
+    end)
+  end
 end)

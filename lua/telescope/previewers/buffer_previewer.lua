@@ -168,9 +168,8 @@ local handle_file_preview = function(filepath, bufnr, stat, opts)
     end
     if opts.preview.check_mime_type == true and has_file and (opts.ft == nil or opts.ft == "") then
       -- avoid SIGABRT in buffer previewer happening with utils.get_os_command_output
-      local output = capture(string.format([[file --mime-type -b "%s"]], filepath))
-      local mime_type = vim.split(output, "/")
-      if mime_type[1] ~= "text" and mime_type[1] ~= "inode" and mime_type[2] ~= "json" then
+      local mime_type = capture(string.format([[file --mime-type -b "%s"]], filepath))
+      if putils.binary_mime_type(mime_type) then
         if type(opts.preview.mime_hook) == "function" then
           opts.preview.mime_hook(filepath, bufnr, opts)
           return
@@ -427,6 +426,7 @@ previewers.new_buffer_previewer = function(opts)
     else
       local bufnr = vim.api.nvim_create_buf(false, true)
       set_bufnr(self, bufnr)
+      vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
 
       vim.schedule(function()
         if vim.api.nvim_buf_is_valid(bufnr) then
@@ -1090,7 +1090,7 @@ previewers.highlights = defaulter(function(_)
 
     define_preview = function(self, entry)
       if not self.state.bufname then
-        local output = vim.split(vim.fn.execute "highlight", "\n")
+        local output = utils.split_lines(vim.fn.execute "highlight")
         local hl_groups = {}
         for _, v in ipairs(output) do
           if v ~= "" then
