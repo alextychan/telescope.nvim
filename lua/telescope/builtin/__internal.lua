@@ -169,7 +169,11 @@ internal.resume = function(opts)
     opts.previewer = vim.F.if_nil(opts.previewer, false)
   end
   opts.resumed_picker = true
-  pickers.new(opts, picker):find()
+  if picker.cache_picker.cached_include then
+    pickers.new(opts, picker):find_ex()
+  else
+    pickers.new(opts, picker):find()
+  end
 end
 
 internal.pickers = function(opts)

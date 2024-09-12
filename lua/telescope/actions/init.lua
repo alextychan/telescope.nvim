@@ -155,6 +155,15 @@ actions.toggle_selection = function(prompt_bufnr)
   current_picker:toggle_selection(current_picker:get_selection_row())
 end
 
+actions.toggle_window_forward = function(prompt_bufnr)
+  local current_picker = action_state.get_current_picker(prompt_bufnr)
+  current_picker:toggle_window_focus(true)
+end
+
+actions.toggle_window_backward = function(prompt_bufnr)
+  local current_picker = action_state.get_current_picker(prompt_bufnr)
+  current_picker:toggle_window_focus(false)
+end
 --- Multi select all entries.
 --- - Note: selected entries may include results not visible in the results pop up.
 ---@param prompt_bufnr number: The prompt bufnr
@@ -1325,6 +1334,21 @@ actions.to_fuzzy_refine = function(prompt_bufnr)
     prompt_title = string.format("%s (%s)", opts.prefix, line),
     sorter = opts.sorter,
   })
+end
+
+actions.rg_toggle_no_ignore = function(prompt_bufnr)
+  local curr_picker = action_state.get_current_picker(prompt_bufnr)
+  if curr_picker.rg == nil or curr_picker.rg.opts == nil then
+    curr_picker.rg = { opts = {} }
+  end
+  -- Toggle ignore flag
+  if curr_picker.rg.opts["--no-ignore"] == false then
+    curr_picker.rg.opts["--no-ignore"] = nil
+  else
+    curr_picker.rg.opts["--no-ignore"] = false
+  end
+  -- Force handle flag
+  curr_picker._on_lines()
 end
 
 actions.nop = function(_) end
