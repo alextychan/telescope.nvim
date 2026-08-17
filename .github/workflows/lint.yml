@@ -1,13 +1,20 @@
 name: Linting and style checking
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+  workflow_dispatch:
 
 jobs:
   luacheck:
     name: Luacheck
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Prepare
         run: |
@@ -16,16 +23,15 @@ jobs:
           sudo luarocks install luacheck
 
       - name: Lint
-        run: sudo make lint
+        run: make lint
 
   stylua:
     name: stylua
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: JohnnyMorganz/stylua-action@v3
+      - uses: actions/checkout@v7
+      - uses: JohnnyMorganz/stylua-action@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
-          # CLI arguments
-          args: --color always --check lua/
+          args: --color always --check .

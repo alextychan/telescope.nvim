@@ -1,6 +1,5 @@
 # telescope.nvim
 
-[![Gitter](https://badges.gitter.im/nvim-telescope/community.svg)](https://gitter.im/nvim-telescope/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![LuaRocks](https://img.shields.io/luarocks/v/Conni2461/telescope.nvim?logo=lua&color=purple)](https://luarocks.org/modules/Conni2461/telescope.nvim)
 
 Gaze deeply into unknown regions using the power of the moon.
@@ -42,90 +41,48 @@ Telescope Wiki</sub>
 
 This section should guide you to run your first builtin pickers.
 
-[Neovim (v0.9.0)](https://github.com/neovim/neovim/releases/tag/v0.9.0) or the
-latest neovim nightly commit is required for `telescope.nvim` to work.
-The neovim version also needs to be compiled with LuaJIT, we currently do not
-support Lua5.1 because of some ongoing issues.
+### Requirements
 
-### Required dependencies
+* [Neovim >=v0.11.7](https://github.com/neovim/neovim/releases/tag/v0.11.6) built **with LuaJIT** (check `:version`).
+* [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim).
 
-- [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) is required.
+>[!IMPORTANT]
+> Only the **latest version** ([`stable`](https://github.com/neovim/neovim/releases/tag/stable)) and the **latest commit of `HEAD`** ([`nightly`](https://github.com/neovim/neovim/releases/tag/nightly)) are tested and supported; before opening an issue, download the latest available release and confirm that the problem persists.
 
-### Suggested dependencies
+### Recommended dependencies
 
-- [BurntSushi/ripgrep](https://github.com/BurntSushi/ripgrep) is required for
+* [BurntSushi/ripgrep](https://github.com/BurntSushi/ripgrep) is required for
   `live_grep` and `grep_string` and is the first priority for `find_files`.
+* [sharkdp/fd](https://github.com/sharkdp/fd) (finder)
+* [devicons](https://github.com/nvim-tree/nvim-web-devicons) (icons)
 
-We also suggest you install one native telescope sorter to significantly improve
-sorting performance. Take a look at either
-[telescope-fzf-native.nvim](https://github.com/nvim-telescope/telescope-fzf-native.nvim)
+We also strongly suggest installing a native telescope sorter to significantly improve
+sorting performance:
+* [telescope-fzf-native.nvim](https://github.com/nvim-telescope/telescope-fzf-native.nvim)
 or
-[telescope-fzy-native.nvim](https://github.com/nvim-telescope/telescope-fzy-native.nvim).
+* [telescope-fzy-native.nvim](https://github.com/nvim-telescope/telescope-fzy-native.nvim).
 For more information and a performance benchmark take a look at the
 [Extensions](https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions)
 wiki.
 
-### Optional dependencies
-
-- [sharkdp/fd](https://github.com/sharkdp/fd) (finder)
-- [nvim-treesitter/nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (finder/preview)
-- [neovim LSP](https://neovim.io/doc/user/lsp.html) (picker)
-- [devicons](https://github.com/nvim-tree/nvim-web-devicons) (icons)
-
 ### Installation
 
-It is suggested to either use the latest release
-[tag](https://github.com/nvim-telescope/telescope.nvim/tags) or our release
-branch (which will get consistent updates)
-[0.1.x](https://github.com/nvim-telescope/telescope.nvim/tree/0.1.x).
-
-It is not suggested to run latest master.
-
-Using [vim-plug](https://github.com/junegunn/vim-plug)
-
-```viml
-Plug 'nvim-lua/plenary.nvim'
-Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.6' }
-" or                                , { 'branch': '0.1.x' }
-```
-
-Using [dein](https://github.com/Shougo/dein.vim)
-
-```viml
-call dein#add('nvim-lua/plenary.nvim')
-call dein#add('nvim-telescope/telescope.nvim', { 'rev': '0.1.6' })
-" or                                         , { 'rev': '0.1.x' })
-```
-
-Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+We recommend pinning to the latest release
+[tag](https://github.com/nvim-telescope/telescope.nvim/tags),
+e.g. using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
-use {
-  'nvim-telescope/telescope.nvim', tag = '0.1.6',
--- or                            , branch = '0.1.x',
-  requires = { {'nvim-lua/plenary.nvim'} }
+{
+    'nvim-telescope/telescope.nvim', version = '*',
+    dependencies = {
+        'nvim-lua/plenary.nvim',
+        -- optional but recommended
+        { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
+    }
 }
 ```
 
-Using [lazy.nvim](https://github.com/folke/lazy.nvim)
-
-```lua
--- init.lua:
-    {
-    'nvim-telescope/telescope.nvim', tag = '0.1.6',
--- or                              , branch = '0.1.x',
-      dependencies = { 'nvim-lua/plenary.nvim' }
-    }
-
--- plugins/telescope.lua:
-return {
-    'nvim-telescope/telescope.nvim', tag = '0.1.6',
--- or                              , branch = '0.1.x',
-      dependencies = { 'nvim-lua/plenary.nvim' }
-    }
-```
-
-### checkhealth
+### Checkhealth
 
 Make sure you call `:checkhealth telescope` after installing telescope to ensure
 everything is set up correctly.
@@ -138,30 +95,12 @@ to get an understanding of how to use Telescope and how to configure it.
 Try the command `:Telescope find_files`
 to see if `telescope.nvim` is installed correctly.
 
-Using VimL:
-
-```viml
-" Find files using Telescope command-line sugar.
-nnoremap <leader>ff <cmd>Telescope find_files<cr>
-nnoremap <leader>fg <cmd>Telescope live_grep<cr>
-nnoremap <leader>fb <cmd>Telescope buffers<cr>
-nnoremap <leader>fh <cmd>Telescope help_tags<cr>
-
-" Using Lua functions
-nnoremap <leader>ff <cmd>lua require('telescope.builtin').find_files()<cr>
-nnoremap <leader>fg <cmd>lua require('telescope.builtin').live_grep()<cr>
-nnoremap <leader>fb <cmd>lua require('telescope.builtin').buffers()<cr>
-nnoremap <leader>fh <cmd>lua require('telescope.builtin').help_tags()<cr>
-```
-
-Using Lua:
-
 ```lua
 local builtin = require('telescope.builtin')
-vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
-vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
-vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
-vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
+vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
+vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
 ```
 
 See [builtin pickers](#pickers) for a list of all builtin functions.
@@ -263,6 +202,9 @@ Many familiar mapping patterns are set up as defaults.
 | `<C-q>`        | Send all items not filtered to quickfixlist (qflist)      |
 | `<M-q>`        | Send all selected items to qflist                         |
 | `<C-r><C-w>`   | Insert cword in original window into prompt (insert mode) |
+| `<C-r><C-a>`   | Insert cWORD in original window into prompt (insert mode) |
+| `<C-r><C-f>`   | Insert cfile in original window into prompt (insert mode) |
+| `<C-r><C-l>`   | Insert cline in original window into prompt (insert mode) |
 
 To see the full list of mappings, check out `lua/telescope/mappings.lua` and the
 `default_mappings` table.
@@ -295,12 +237,6 @@ explained in `:help telescope.defaults.mappings`.
 ## Pickers
 
 Built-in functions. Ready to be bound to any key you like.
-
-```vim
-:lua require'telescope.builtin'.planets{}
-
-:nnoremap <Leader>pp :lua require'telescope.builtin'.planets{}
-```
 
 ### File Pickers
 
@@ -371,7 +307,7 @@ Built-in functions. Ready to be bound to any key you like.
 
 | Functions            | Description                                       |
 | -------------------- | ------------------------------------------------- |
-| `builtin.treesitter` | Lists Function names, variables, from Treesitter! |
+| `builtin.treesitter` | Lists Function names, variables, ... using treesitter [`locals` queries](https://github.com/nvim-treesitter/nvim-treesitter/blob/main/CONTRIBUTING.md#locals) |
 
 ### Lists Picker
 
@@ -403,7 +339,7 @@ filetype detection you should read `:help vim.filetype`.
 
 We need to do it manually because we can't determine the filetype in the
 traditional way: We don't do `bufload` and instead read the file asynchronously
-with `vim.loop.fs_` and attach only a highlighter; otherwise the speed of the
+with `vim.uv.fs_` and attach only a highlighter; otherwise the speed of the
 previewer would slow down considerably.
 
 If you want to configure the `vim_buffer_` previewer (e.g. you want the line to wrap), do this:
@@ -464,8 +400,8 @@ For more details on resolving sizes, see `:help telescope.resolve`.
 As an example, if we wanted to specify the layout strategy and width,
 but only for this instance, we could do something like:
 
-```
-:lua require('telescope.builtin').find_files({layout_strategy='vertical',layout_config={width=0.5}})
+```lua
+require('telescope.builtin').find_files({layout_strategy='vertical',layout_config={width=0.5}})
 ```
 
 If we wanted to change the width for every time we use the `vertical`
@@ -537,7 +473,7 @@ a theme, check out `lua/telescope/themes.lua`.
 All `telescope.nvim` functions are wrapped in `vim` commands for easy access,
 tab completions and setting options.
 
-```viml
+```vim
 " Show all builtin pickers
 :Telescope
 
@@ -600,9 +536,9 @@ tab completions will not be available right away.
 Pickers from extensions are added to the `:Telescope` command under their
 respective name. For example:
 
-```viml
+```vim
 " Run the `configurations` picker from nvim-dap
-:Telescope dap configurations
+Telescope dap configurations
 ```
 
 They can also be called directly from Lua:
@@ -632,6 +568,9 @@ Please read [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Related Projects
 
+- [snacks.picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md)
+- [mini.pick](https://github.com/nvim-mini/mini.pick)
+- [fzf-lua](https://github.com/ibhagwan/fzf-lua)
 - [fzf.vim](https://github.com/junegunn/fzf.vim)
 - [denite.nvim](https://github.com/Shougo/denite.nvim)
 - [vim-clap](https://github.com/liuchengxu/vim-clap)
